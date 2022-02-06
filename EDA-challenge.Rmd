@@ -1,0 +1,129 @@
+---
+title: "EDA-challenge"
+author: "Jyhreh Johnson"
+date: "2/4/2022"
+output:
+  html_document: default
+---
+Preliminaries
+```{r}
+library(tidyverse)
+
+f <- "https://raw.githubusercontent.com/difiore/ada-2022-datasets/main/data-wrangling.csv"
+d <- read_csv(f, col_names = TRUE)
+names(d)
+```
+
+Variables 
+
+1. BSD (body size dimorphism)
+```{r}
+BSD <- d 
+BSD$BSD <- d$Body_mass_male_mean/d$Body_mass_female_mean
+```
+
+2. Sex Ratio
+```{r}
+sex_ratio <- BSD
+sex_ratio$sex_ratio <- d$AdultFemale/d$AdultMales
+```
+
+3. DI (defensibility index)
+```{r}
+DI <- sex_ratio
+DI$DI <- d$DayLength_km / 2 * sqrt(d$HomeRange_km2/pi)
+```
+
+Create updated dataset
+```{r}
+updated_d <- DI
+d <- updated_d
+names(d)
+```
+
+Plots
+
+4.
+```{r}
+par(mfrow = c(1,2))
+plot(x = d$DayLength_km, y = d$Move)
+plot(x = log(d$DayLength_km), y = log(d$Move))
+```
+
+```{r}
+p <- ggplot(data = d, aes(x = log(d$DayLength_km),
+                        y = log(d$Move),
+                         color = factor(Family)))
+p <- p + xlab("log(d$DayLength_km)") + ylab("log(d$Move)")
+p <- p + geom_point(na.rm = TRUE)
+p <- p + theme(legend.position = "bottom", legend.title = element_blank())
+p
+```
+
+5.
+```{r}
+par(mfrow = c(1,3))
+plot(x = d$DayLength_km, y = d$MeanGroupSize)
+plot(x = log(d$DayLength_km), y = log(d$MeanGroupSize))
+```
+
+```{r}
+p <- ggplot(data=d, aes(x = log(d$DayLength_km),
+                        y = log(d$MeanGroupSize),
+                         color = factor(Family)))
+p <- p + xlab("log(d$DayLength_km)") + ylab("log(d$MeanGroupSize)")
+p <- p + geom_point(na.rm = TRUE)
+p <- p + theme(legend.position = "bottom", legend.title = element_blank())
+p
+```
+
+6.
+```{r}
+par(mfrow = c(1,3))
+plot(x = d$BSD, y = d$Canine_Dimorphism)
+plot(x = log(d$BSD), y = log(d$Canine_Dimorphism))
+```
+
+```{r}
+p <- ggplot(data=d, aes(x = log(d$BSD),
+                        y = log(d$Canine_Dimorphism),
+                        color = factor(Family)))
+p <- p + xlab("log(d$BSD)") + ylab("log(d$Canine_Dimorphism)")
+p <- p + geom_point(na.rm = TRUE)
+p <- p + theme(legend.position ="bottom", legend.title=element_blank())
+p
+```
+
+7. 
+```{r}
+d <- mutate(d,"diet_strategy" = case_when(
+    Fruit >= 50 ~ "frugivore",
+    Leaves >= 50 ~ "folivore",
+    Fruit < 50 & Leaves < 50 ~ "omnivore"
+  ))
+names(d)
+```
+
+```{r}
+p <- ggplot(data = d, aes(x = d$diet_strategy, y = log(d$MeanGroupSize)))
+p <- p + geom_boxplot(na.rm = TRUE)
+p <- p + theme(axis.text.x = element_text(angle = 90))
+p <- p + ylab("log(Mean Group Size)")
+p
+```
+
+8.
+```{r}
+s <- mutate(d, Binomial = paste(Genus, Species, sep = " ")) %>%
+  select(Binomial,
+         Family,
+         Brain_Size_Species_Mean,
+         Body_mass_male_mean) %>%
+  group_by(Family) %>%
+  summarise(
+    avgBS = mean(Brain_Size_Species_Mean, na.rm = TRUE),
+    avgM = mean(Body_mass_male_mean, na.rm = TRUE)
+  ) %>%
+  arrange(avgBS)
+s
+```
